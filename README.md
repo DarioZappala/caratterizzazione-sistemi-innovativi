@@ -1,5 +1,9 @@
 # Caratterizzazione dei sistemi innovativi
 
+## Obiettivi
+- Trovare una misura dell'innovazione per un ecosistema di startup (città).
+- Predire quali città avranno piú innovazione.
+
 ## Dati
 - Informazioni sulle aziende: data di fondazione, lodalizzazione della sede, settori di mercato, ...
 - Informazioni sugli impieghi dei lavoratori: id lavoratore, ruolo ricoperto, azienda, date d'inizio e fine (ma manca circa 1/3 delle date d'inizio e la maggior parte delle date di fine), ...
