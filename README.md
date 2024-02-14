@@ -1,4 +1,4 @@
-# Caratterizzazione sistemi innovativi
+# Caratterizzazione dei sistemi innovativi
 
 ## Dati
 - Informazioni sulle aziende: data di fondazione, lodalizzazione della sede, settori di mercato, ...
