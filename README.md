@@ -8,9 +8,7 @@
 - Informazioni sulle aziende: data di fondazione, lodalizzazione della sede, settori di mercato, ...
 - Informazioni sugli impieghi dei lavoratori: id lavoratore, ruolo ricoperto, azienda, date d'inizio e fine (ma manca circa 1/3 delle date d'inizio e la maggior parte delle date di fine), ...
 
-## Idee e lavoro da fare
-
-### A breve termine
+## Lavori in corso
 - Come cambia nel tempo il n. di startup e di lavoratori? Sia la funzione sia la cumulativa
 - Quanti lavoratori ci sono e quanti contratti in funzione del tempo?
 - Grafico a torta sui settori
@@ -22,7 +20,7 @@
 - Binning negli istogrammi dei ruoli
 - Airbnb: dalla nascita, com'è evoluto il profilo dell'azienda?
 
-### A medio termine
+## Idee
 - Fare l'analisi solo su startup. Dovremmo avere una definizione di "startup", tipo azienda che ha ricevuto fondi fino a X, con Y dipendenti, etc.
 - Per confrontare i risultati con quelli di Moreno, usare dati fino a dicembre 2015
 - Potrebbe essere il caso di eliminare aziende in base alla data di fondazione?
@@ -30,7 +28,7 @@
 - Valutare se usare altre misure di distanza
 - Provare HDBSCAN
 
-### A lungo termine
+### Per dopo
 - Ripetere l'analisi usando i settori di mercato invece dei ruoli
 - Fare un clustering a partire dalla rete (imprese collegate da lavoratori). Confrontare i risultati
 - Profilo d'ogni città con evoluzione temporale (ogni 5 anni?). Sono stabili nel tempo? Geograficamente c'è stata un'evoluzione? La Silicon Valley è ancora il centro del mondo? Imprese che si spopolano?
