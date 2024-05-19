@@ -4,7 +4,7 @@ import collections as cl
 def clean_jobs(df_jobs):
     # converte le colonne scelte da testo a Timestamp
     df_jobs['started_on'] = pd.to_datetime(df_jobs['started_on'], errors = 'coerce')
-    df_jobs['ended_on'] = pd.to_datetime(df_jobs['ended_on'], errors = 'coerce')
+    df_jobs['ended_on']   = pd.to_datetime(df_jobs['ended_on'], errors = 'coerce')
     
     # separa il ruolo 'founder'
     df_jobs.loc[
@@ -28,3 +28,24 @@ def clean_organizations(df_organizations):
             'RUS', 'SMR', 'SRB', 'SVK', 'SVN', 'ESP', 'SWE', 'CHE', 'TUR', 'UKR', 'GBR', 'VAT', 'ALA', 'GGY', 'JEY', 'FRO', 'GIB', 'GRL', 'IMN', 'SJM']}
     )
     df_organizations['area'] = df_organizations['country_code'].map(dict_country_to_area)
+
+def clean_text(s):
+    s = str(s).lower()
+    l_of_words = ['and ','&',',','//','\\','the ','of ','co-']
+    for w in l_of_words:
+        s = s.replace(w,'')
+    if 'chief executive officer' in s:
+        s=s.replace('chief executive officer','ceo')
+    if 'founder ceo' in s:
+        s=s.replace('founder ceo','ceo founder') 
+    l = s.split(' ')
+    try:
+        l.remove('')
+    except:
+        dummy=1
+    # if 'ceo' in l and any(s.endswith('founder') or s.startswith('founder') for s in l):
+    #     return ' '.join(l)
+    # else:
+    #     return ''
+    return ' '.join(l)
+    
