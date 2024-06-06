@@ -57,6 +57,44 @@ colors = sns.color_palette("tab10", n_colors=len(dimension_labels))
 
 # -------------------------------
 
+def updateFitness(X,Q):
+
+    return X @ Q
+
+# -------------------------------
+
+def updateComplexity(X,F):
+
+    F_1 = 1/F
+    return 1/(X.T @ F_1)
+
+# -------------------------------
+
+def distance(A,B):
+
+    return np.sum(np.abs(A - B))
+
+# -------------------------------
+
+def fitnessComplexity(X,n_rounds=100,toll = 1e-4):
+
+    F = np.ones(X.shape[0])
+    Q = np.ones(X.shape[1])
+    
+    for i in range(n_rounds):
+        F_tilde = updateFitness(X,Q)
+        Q_tilde = updateComplexity(X,F)
+        F = F_tilde / np.mean(F_tilde)
+        Q = Q_tilde / np.mean(Q_tilde)
+
+        if distance(Q,Q_tilde) < toll:
+            print(f"\nConverged in {i} steps")
+            break
+
+    return F,Q
+
+# -------------------------------
+
 def entropyTrendPlot(l_coeff):
     plt.figure(figsize=(10,8))
     plt.plot(sorted(l_coeff,reverse=True))
