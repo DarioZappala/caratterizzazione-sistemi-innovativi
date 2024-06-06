@@ -20,6 +20,8 @@ from sklearn.mixture import BayesianGaussianMixture
 import scipy.stats as stats
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 import importlib
+import itertools as itt
+import collections as clc
 # import utils
 import warnings
 import networkx as nx
@@ -159,6 +161,19 @@ def clean_jobs(df_jobs):
         df_jobs['title'].str.contains('founder', case = False, na = False),
         'job_type'
     ] = 'founder'
+
+def clean_organizations(df_organizations):
+    # converte le colonne scelte da testo a Timestamp
+    df_organizations['founded_on'] = pd.to_datetime(df_organizations['founded_on'], errors = 'coerce')
+    df_organizations['closed_on'] = pd.to_datetime(df_organizations['closed_on'], errors = 'coerce')
+    
+    # crea la colonna 'area' con l'indicazione dell'area geografica ('Europe' o 'USA')
+    dict_country_to_area = clc.defaultdict(lambda: None)
+    dict_country_to_area.update(
+        {c: 'USA' for c in us_countries} |
+        {c: 'Europe' for c in european_countries}
+    )
+    df_organizations['area'] = df_organizations['country_code'].map(dict_country_to_area)
 
 # -------------
 
@@ -764,3 +779,89 @@ def str_to_list(s):
     except (ValueError, SyntaxError):
         # If the string cannot be parsed, return it as is or handle it accordingly
         return s
+
+# -----------
+
+def compute_evolution(df_organizations, sel_subnet = None, years_past = None):
+    '''
+    Computes the evolution of the network, using df_organizations as data of organizations.
+    
+    Returns:
+        - df_evolution, a DataFrame with sectors and links (and their weights) that are added each year;
+        - ser_network, a Series of networks (type networkx), one for each year.
+    
+    Parameters:
+        - sel_subnet: Selection of a subnet where evolution will be calculated.
+        - years_past: How many years in the past to take data when building network of current year. If 0, only data of current year is used; if None, data of all years is used.
+    '''
+    if (sel_subnet is None):
+        sel_subnet = pd.Series(True, index = df_organizations.index)
+    
+    df_evolution = pd.DataFrame(index = sorted(df_organizations['founded_on'].unique()))
+    df_evolution['sectors'] = [clc.Counter()] * df_evolution.shape[0]
+    df_evolution['links'] = [clc.Counter()] * df_evolution.shape[0]
+
+    df_evolution_sectors = (
+        df_organizations.loc[sel_subnet, ['founded_on', 'sectors']]
+        .explode('sectors')
+        .groupby('founded_on')
+        .agg({'sectors': lambda x: clc.Counter(x)})
+    )
+    df_evolution.loc[df_evolution_sectors.index, 'sectors'] = df_evolution_sectors['sectors']
+    del(df_evolution_sectors)
+
+    df_evolution_links = (
+        df_organizations.loc[sel_subnet & (df_organizations['sectors'].str.len() > 1), ['founded_on', 'sectors']]
+        .assign(links = lambda x: list(list(itt.combinations(y, 2)) for y in x['sectors']))
+        .explode('links')
+        .groupby('founded_on')
+        .agg({'links': lambda x: clc.Counter(x)})
+    )
+    df_evolution.loc[df_evolution_links.index, 'links'] = df_evolution_links['links']
+    del(df_evolution_links)
+
+    sectors = clc.Counter()
+    links = clc.Counter()
+    ser_network = pd.Series(index = df_evolution.index, dtype = object)
+    for t in range(ser_network.shape[0]):
+        sectors += df_evolution.iloc[t]['sectors']
+        links += df_evolution.iloc[t]['links']
+        if (years_past is not None):
+            t_min = t - years_past
+            if (t_min > 0):
+                sectors -= df_evolution.iloc[t_min - 1]['sectors']
+                links -= df_evolution.iloc[t_min - 1]['links']
+        ser_network.iloc[t] = nx.Graph()
+        ser_network.iloc[t].add_nodes_from(((key, {'weight': value}) for key, value in sectors.items()))
+        ser_network.iloc[t].add_edges_from(((*key, {'weight': value}) for key, value in links.items()))
+    del sectors, links
+    
+    return df_evolution, ser_network
+
+
+def compute_evolution_sectors(df_organizations, sel_subnet = None):
+    if (sel_subnet is None):
+        sel_subnet = pd.Series(True, index = df_organizations.index)
+    
+    df_evolution = pd.DataFrame(index = sorted(df_organizations['founded_on'].unique()))
+    df_evolution['added_sectors'] = [set()] * df_evolution.shape[0]
+    df_evolution['total_sectors'] = [set()] * df_evolution.shape[0]
+
+    df_evolution_sectors = (
+        df_organizations.loc[sel_subnet, ['founded_on', 'sectors']]
+        .explode('sectors')
+        .groupby('founded_on')
+        .agg({'sectors': set})
+    ).rename(columns = {'sectors': 'added_sectors'})
+    
+    df_evolution.loc[df_evolution_sectors.index, 'added_sectors'] = df_evolution_sectors['added_sectors']
+    
+    idx = df_evolution.index[0]
+    df_evolution.at[idx, 'total_sectors'] = df_evolution.loc[idx, 'added_sectors']
+
+    for t in range(1, df_evolution.shape[0]):
+        idx_current = df_evolution.index[t]
+        idx_previous = df_evolution.index[t - 1]
+        df_evolution.at[idx_current, 'total_sectors'] = df_evolution.loc[idx_current, 'added_sectors'].union(df_evolution.loc[idx_previous, 'total_sectors'])
+
+    return df_evolution['total_sectors']
