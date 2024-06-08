@@ -59,6 +59,44 @@ colors = sns.color_palette("tab10", n_colors=len(dimension_labels))
 
 # -------------------------------
 
+def updateFitness(X,Q):
+
+    return X @ Q
+
+# -------------------------------
+
+def updateComplexity(X,F):
+
+    F_1 = 1/F
+    return 1/(X.T @ F_1)
+
+# -------------------------------
+
+def distance(A,B):
+
+    return np.sum(np.abs(A - B))
+
+# -------------------------------
+
+def fitnessComplexity(X,n_rounds=100,toll = 1e-4):
+
+    F = np.ones(X.shape[0])
+    Q = np.ones(X.shape[1])
+    
+    for i in range(n_rounds):
+        F_tilde = updateFitness(X,Q)
+        Q_tilde = updateComplexity(X,F)
+        F = F_tilde / np.mean(F_tilde)
+        Q = Q_tilde / np.mean(Q_tilde)
+
+        if distance(Q,Q_tilde) < toll:
+            print(f"\nConverged in {i} steps")
+            break
+
+    return F,Q
+
+# -------------------------------
+
 def entropyTrendPlot(l_coeff):
     plt.figure(figsize=(10,8))
     plt.plot(sorted(l_coeff,reverse=True))
@@ -827,19 +865,3 @@ def compute_evolution_sectors(df_organizations, sel_subnet = None):
         df_evolution.at[idx_current, 'total_sectors'] = df_evolution.loc[idx_current, 'added_sectors'].union(df_evolution.loc[idx_previous, 'total_sectors'])
 
     return df_evolution['total_sectors']
-
-# ------------
-
-def filterYear(df, date_column, year_s, delta=5):
-    # Convert the date column to datetime if not already
-    if not pd.api.types.is_datetime64_any_dtype(df[date_column]):
-        df[date_column] = pd.to_datetime(df[date_column])
-        
-    # Create the start and end date ranges
-    year = pd.Timestamp(year=year_s, month=12, day=31)
-    future = pd.Timestamp(year=year_s+delta, month=12, day=31)
-
-    # Filter the DataFrame based on the date range
-    filtered_df = df[(df[date_column] >= year) & (df[date_column] <= future)]
-
-    return filtered_df
