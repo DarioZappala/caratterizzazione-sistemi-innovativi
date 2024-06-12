@@ -801,7 +801,17 @@ def compute_evolution(df_organizations, sel_subnet = None, years_past = None):
     return df_evolution, ser_network
 
 
-def compute_evolution_sectors(df_organizations, sel_subnet = None):
+def compute_evolution_sectors(df_organizations, sel_subnet = None, years_past = None):
+    '''
+    Computes the evolution of the sectors that are present in the network, using df_organizations as data of organizations.
+    
+    Returns:
+        - time series containing, for each year, the set of sectors that are present in the network.
+    
+    Parameters:
+        - sel_subnet: Selection of a subnet where evolution will be calculated.
+        - years_past: How many years in the past to take data when building network of current year. If 0, only data of current year is used; if None, data of all years is used.
+    '''
     if (sel_subnet is None):
         sel_subnet = pd.Series(True, index = df_organizations.index)
     
@@ -821,9 +831,11 @@ def compute_evolution_sectors(df_organizations, sel_subnet = None):
     idx = df_evolution.index[0]
     df_evolution.at[idx, 'total_sectors'] = df_evolution.loc[idx, 'added_sectors']
 
+    t_min = 0
     for t in range(1, df_evolution.shape[0]):
+        if (years_past is not None):
+            t_min = max(0, t - years_past)
         idx_current = df_evolution.index[t]
-        idx_previous = df_evolution.index[t - 1]
-        df_evolution.at[idx_current, 'total_sectors'] = df_evolution.loc[idx_current, 'added_sectors'].union(df_evolution.loc[idx_previous, 'total_sectors'])
+        df_evolution.at[idx_current, 'total_sectors'] = set.union(*(s for s in df_evolution.iloc[t_min : t + 1]['added_sectors']))
 
     return df_evolution['total_sectors']
