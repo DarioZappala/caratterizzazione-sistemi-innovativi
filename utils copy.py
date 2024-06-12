@@ -59,6 +59,44 @@ colors = sns.color_palette("tab10", n_colors=len(dimension_labels))
 
 # -------------------------------
 
+def updateFitness(X,Q):
+
+    return X @ Q
+
+# -------------------------------
+
+def updateComplexity(X,F):
+
+    F_1 = 1/F
+    return 1/(X.T @ F_1)
+
+# -------------------------------
+
+def distance(A,B):
+
+    return np.sum(np.abs(A - B))
+
+# -------------------------------
+
+def fitnessComplexity(X,n_rounds=100,toll = 1e-4):
+
+    F = np.ones(X.shape[0])
+    Q = np.ones(X.shape[1])
+    
+    for i in range(n_rounds):
+        F_tilde = updateFitness(X,Q)
+        Q_tilde = updateComplexity(X,F)
+        F = F_tilde / np.mean(F_tilde)
+        Q = Q_tilde / np.mean(Q_tilde)
+
+        if distance(Q,Q_tilde) < toll:
+            print(f"\nConverged in {i} steps")
+            break
+
+    return F,Q
+
+# -------------------------------
+
 def entropyTrendPlot(l_coeff):
     plt.figure(figsize=(10,8))
     plt.plot(sorted(l_coeff,reverse=True))
@@ -801,17 +839,7 @@ def compute_evolution(df_organizations, sel_subnet = None, years_past = None):
     return df_evolution, ser_network
 
 
-def compute_evolution_sectors(df_organizations, sel_subnet = None, years_past = None):
-    '''
-    Computes the evolution of the sectors that are present in the network, using df_organizations as data of organizations.
-    
-    Returns:
-        - time series containing, for each year, the set of sectors that are present in the network.
-    
-    Parameters:
-        - sel_subnet: Selection of a subnet where evolution will be calculated.
-        - years_past: How many years in the past to take data when building network of current year. If 0, only data of current year is used; if None, data of all years is used.
-    '''
+def compute_evolution_sectors(df_organizations, sel_subnet = None):
     if (sel_subnet is None):
         sel_subnet = pd.Series(True, index = df_organizations.index)
     
@@ -831,28 +859,9 @@ def compute_evolution_sectors(df_organizations, sel_subnet = None, years_past = 
     idx = df_evolution.index[0]
     df_evolution.at[idx, 'total_sectors'] = df_evolution.loc[idx, 'added_sectors']
 
-    t_min = 0
     for t in range(1, df_evolution.shape[0]):
-        if (years_past is not None):
-            t_min = max(0, t - years_past)
         idx_current = df_evolution.index[t]
-        df_evolution.at[idx_current, 'total_sectors'] = set.union(*(s for s in df_evolution.iloc[t_min : t + 1]['added_sectors']))
+        idx_previous = df_evolution.index[t - 1]
+        df_evolution.at[idx_current, 'total_sectors'] = df_evolution.loc[idx_current, 'added_sectors'].union(df_evolution.loc[idx_previous, 'total_sectors'])
 
     return df_evolution['total_sectors']
-
-
-# ------------
-
-def filterYear(df, date_column, year_s, delta=5):
-    # Convert the date column to datetime if not already
-    if not pd.api.types.is_datetime64_any_dtype(df[date_column]):
-        df[date_column] = pd.to_datetime(df[date_column])
-        
-    # Create the start and end date ranges
-    year = pd.Timestamp(year=year_s, month=12, day=31)
-    future = pd.Timestamp(year=year_s+delta, month=12, day=31)
-
-    # Filter the DataFrame based on the date range
-    filtered_df = df[(df[date_column] >= year) & (df[date_column] <= future)]
-
-    return filtered_df
